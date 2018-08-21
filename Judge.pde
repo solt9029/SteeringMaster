@@ -15,6 +15,7 @@ class Judge {
   
   public void display() {
     fill(this.c);
+    textAlign(CENTER);
     text(this.comment, this.x, this.y);
     this.duration--;
   }

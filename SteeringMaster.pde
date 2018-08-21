@@ -9,6 +9,12 @@ AudioSample audioSample;
 
 String stage; // 現在何をしているのか格納する
 
+int score = 0;
+int combo = 0;
+
+PFont normalFont;
+PFont bigFont;
+
 ArrayList<Judge> judges = new ArrayList<Judge>();
 
 int [] states;
@@ -29,7 +35,7 @@ int getPathIndex() {
     if (notes[i] == 0) {
       continue;
     }
-    if (states[i] == STATE_GREAT || states[i] == STATE_GOOD || states[i] == STATE_OKAY || states[i] == STATE_BAD) {
+    if (states[i] == STATE_GREAT || states[i] == STATE_OKAY || states[i] == STATE_BAD) {
       pathIndex++;
       continue;
     }
@@ -44,8 +50,9 @@ void settings() {
 
 void setup() {
   noStroke();
-  textSize(TEXT_SIZE);
-  
+  normalFont = loadFont("RictyDiminished-Bold-120.vlw");
+  bigFont = loadFont("RictyDiminished-Bold-240.vlw");
+
   titleImg = loadImage("title.png");
 
   minim = new Minim(this);
@@ -59,20 +66,20 @@ void setup() {
 
 void draw() {
   switch(stage) {
-    case STAGE_TITLE:
-      drawTitle();
-      break;
-  
-    case STAGE_GAME:
-      drawGame();
-      break;
-  
-    case STAGE_RESULT:
-      drawResult();
-      break;
-  
-    default:
-      break;
+  case STAGE_TITLE:
+    drawTitle();
+    break;
+
+  case STAGE_GAME:
+    drawGame();
+    break;
+
+  case STAGE_RESULT:
+    drawResult();
+    break;
+
+  default:
+    break;
   }
 }
 
@@ -112,8 +119,6 @@ void mousePressed() {
       steering = true;
       if (abs(i) <= GREAT_RANGE) {
         states[noteIndex + i] = STATE_GREAT_STEERING;
-      } else if (abs(i) <= GOOD_RANGE) {
-        states[noteIndex + i] = STATE_GOOD_STEERING;
       } else if (abs(i) <= OKAY_RANGE) {
         states[noteIndex + i] = STATE_OKAY_STEERING;
       }
@@ -164,13 +169,14 @@ void drawGame() {
   if (noteIndex - (OKAY_RANGE + 1) >= 0 && noteIndex - (OKAY_RANGE + 1) < notes.length) {
     if (notes[noteIndex - (OKAY_RANGE + 1)] == 1 && states[noteIndex - (OKAY_RANGE + 1)] == STATE_FRESH) {
       states[noteIndex - (OKAY_RANGE + 1)] = STATE_BAD;
-      judges.add(new Judge(BAD_COMMENT, START_X, CENTER_Y, RED_COLOR));
+      judges.add(new Judge(BAD_COMMENT, START_X, CENTER_Y, BLUE_COLOR));
+      combo = 0;
     }
   }
 
   // 判定描画
   for (int i = 0; i < judges.size(); i++) {
-    fill(0);
+    textFont(normalFont);
     judges.get(i).display();
     if (judges.get(i).duration < 0) {
       judges.remove(i);
@@ -185,7 +191,8 @@ void drawGame() {
       // 幅からはみ出ている場合
       if (mouseY < CENTER_Y - paths[pathIndex][0] / 2 || mouseY > CENTER_Y + paths[pathIndex][0] / 2) {
         states[steeringNoteIndex] = STATE_BAD;
-        judges.add(new Judge(BAD_COMMENT, mouseX, mouseY, RED_COLOR));
+        judges.add(new Judge(BAD_COMMENT, mouseX, mouseY, BLUE_COLOR));
+        combo = 0;
         steering = false;
         steeringPositions = new ArrayList<Position>();
       }
@@ -193,21 +200,20 @@ void drawGame() {
 
     // ステアリング終了していた場合
     if (mouseX > START_X + paths[pathIndex][1]) {
+      combo++;
       switch (states[steeringNoteIndex]) {
-        case STATE_GREAT_STEERING:
-          states[steeringNoteIndex] = STATE_GREAT;
-          judges.add(new Judge(GREAT_COMMENT, mouseX, mouseY, RED_COLOR));
-          break;
-        case STATE_GOOD_STEERING:
-          states[steeringNoteIndex] = STATE_GOOD;
-          judges.add(new Judge(GOOD_COMMENT, mouseX, mouseY, RED_COLOR));
-          break;
-        case STATE_OKAY_STEERING:
-          states[steeringNoteIndex] = STATE_OKAY;
-          judges.add(new Judge(OKAY_COMMENT, mouseX, mouseY, RED_COLOR));
-          break;
-        default:
-          break;
+      case STATE_GREAT_STEERING:
+        states[steeringNoteIndex] = STATE_GREAT;
+        judges.add(new Judge(GREAT_COMMENT, mouseX, mouseY, RED_COLOR));
+        score += (SCORE_BASIC_OKAY_INCREMENT + SCORE_COMBO_INCREMENT * combo) * SCORE_OKAY_GREAT_RATIO;
+        break;
+      case STATE_OKAY_STEERING:
+        states[steeringNoteIndex] = STATE_OKAY;
+        judges.add(new Judge(OKAY_COMMENT, mouseX, mouseY, BLACK_COLOR));
+        score += (SCORE_BASIC_OKAY_INCREMENT + SCORE_COMBO_INCREMENT * combo);
+        break;
+      default:
+        break;
       }
       steering = false;
       steeringPositions = new ArrayList<Position>();
@@ -215,11 +221,26 @@ void drawGame() {
 
     // ステアリングの軌跡を描画
     stroke(RED_COLOR);
+    strokeWeight(10);
     for (int i = 0; i < steeringPositions.size() - 1; i++) {
       line(steeringPositions.get(i).x, steeringPositions.get(i).y, steeringPositions.get(i + 1).x, steeringPositions.get(i + 1).y);
     }
     noStroke();
   }
+
+  // 得点描画
+  fill(BLACK_COLOR);
+  textFont(normalFont);
+  textAlign(LEFT);
+  text(score, UNIT, NORMAL_TEXT_SIZE);
+
+  // コンボ描画
+  fill(WHITE_COLOR);
+  textAlign(CENTER);
+  textFont(bigFont);
+  text(combo, UNIT * X_NUM / 2, BIG_TEXT_SIZE);
+  textFont(normalFont);
+  text("COMBO", UNIT * X_NUM / 2, BIG_TEXT_SIZE + NORMAL_TEXT_SIZE);
 
   if (noteIndex >= notes.length) {
     stage = STAGE_RESULT;
@@ -238,6 +259,8 @@ void drawGame() {
     println("steering:" + steering);
     println("steeringNoteIndex:" + steeringNoteIndex);
     println("steeringPathIndex:" + steeringPathIndex);
+    println("combo:" + combo);
+    println("score:" + score);
     println("====================");
   }
 }
