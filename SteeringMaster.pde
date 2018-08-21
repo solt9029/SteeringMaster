@@ -2,6 +2,7 @@ import ddf.minim.*;
 import ddf.minim.effects.*;
 
 PImage titleImg;
+PImage resultImg;
 String selectedMode;
 
 Minim minim;
@@ -17,6 +18,7 @@ int [][] paths;
 
 int score = 0;
 int combo = 0;
+int maxCombo = 0;
 
 PFont normalFont;
 PFont bigFont;
@@ -61,6 +63,7 @@ void setup() {
 
   selectedMode = EASY_MODE;
   titleImg = loadImage("title.png");
+  resultImg = loadImage("result.png");
 
   minim = new Minim(this);
   audioPlayer = minim.loadFile("music.wav");
@@ -265,6 +268,9 @@ void drawGame() {
     // ステアリング終了していた場合
     if (mouseX > START_X + paths[pathIndex][1]) {
       combo++;
+      if (combo > maxCombo) {
+        maxCombo = combo;
+      }
       switch (states[steeringNoteIndex]) {
       case STATE_GREAT_STEERING:
         states[steeringNoteIndex] = STATE_GREAT;
@@ -331,6 +337,13 @@ void drawGame() {
 
 void drawResult() {
   background(WHITE_COLOR);
+  image(resultImg, 0, 0, UNIT * X_NUM, UNIT * Y_NUM);
+  
+  textAlign(LEFT);
+  textFont(bigFont);
+  fill(WHITE_COLOR);
+  text(RESULT_SCORE + score, RESULT_X, BIG_TEXT_SIZE);
+  text(RESULT_COMBO + maxCombo, RESULT_X, BIG_TEXT_SIZE * 2);
 }
 
 void stop() {
