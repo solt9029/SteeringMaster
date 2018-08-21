@@ -1,4 +1,44 @@
-final int UNIT = 60; // 単位正方形
-final int X_NUM = 40; // 画面横に並べられる単位正方形の数
-final int Y_NUM = 20; // 画面縦に並べられる単位正方形の数
-final String ENV = "development"; // development:デバッグ用・production:本番用
+final int UNIT = 30; // 単位正方形
+final int X_NUM = 80; // 画面横に並べられる単位正方形の数
+final int Y_NUM = 40; // 画面縦に並べられる単位正方形の数
+
+final String DEVELOPMENT = "development"; // development:デバッグ用
+final String PRODUCTION = "production"; // production:本番用
+final String ENVIRONMENT = PRODUCTION;
+
+final String STAGE_TITLE = "title"; // タイトル画面
+final String STAGE_LOADING = "loading"; // ロード中（ゲーム画面）
+final String STAGE_GAME = "game"; // ゲーム画面
+final String STAGE_RESULT = "result"; // 結果画面
+
+final int SPACE_KEY_CODE = 32;
+
+final color WATER_COLOR = color(157, 204, 224);
+final color YELLOW_GREEN_COLOR = color(152, 251, 152);
+final color WHITE_COLOR = color(255, 255, 255);
+final color RED_COLOR = color(255, 0, 0);
+final color PINK_COLOR = color(234, 145, 152);
+final color GLAY_COLOR = color (200, 200, 200);
+
+final float NOTE_RADIUS = UNIT * 2.5 / 3.0; // ノーツの半径
+final int START_X = UNIT * 20; // ステアリングをスタートするX座標
+final int CENTER_Y = UNIT * 34; // ステアリングする場所のY座標中心
+final float NOTE_SPACE = UNIT / 3.0; // ノート1個が占める範囲
+
+final int GREAT_RANGE = 1; // Great判定の範囲（現在のnoteIndexからプラスマイナス1）
+final int GOOD_RANGE = 2; // Good判定の範囲
+final int OKAY_RANGE = 3; // Okay判定の範囲
+
+final String GREAT_COMMENT = "Great!";
+final String GOOD_COMMENT = "Good!";
+final String OKAY_COMMENT = "Okay!";
+final String BAD_COMMENT = "Bad";
+
+final int STATE_FRESH = 0; // まだ使われていない状態
+final int STATE_GREAT_STEERING = 1; // 最初がGreat判定でステアリング中
+final int STATE_GOOD_STEERING = 2; // 最初がGood判定でステアリング中
+final int STATE_OKAY_STEERING = 3; // 最初がOkay判定でステアリング中
+final int STATE_GREAT = 4; // Great判定
+final int STATE_GOOD = 5; // Good判定
+final int STATE_OKAY = 6; // Okay判定
+final int STATE_BAD = 7; // Bad判定（最初がBad判定またはステアリングで失敗した状態）

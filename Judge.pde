@@ -1,13 +1,21 @@
 class Judge {
-  public int duration = 20;
+  private final int INITIAL_DURATION = 20;
+  public int duration = this.INITIAL_DURATION;
   public String comment = "";
+  public int x;
+  public int y;
+  public color c;
   
-  Judge(String comment) {
+  Judge(String comment, int x, int y, color c) {
     this.comment = comment;
+    this.x = x;
+    this.y = y;
+    this.c = c;
   }
   
   public void display() {
-    text(comment, 0, 0);
+    fill(this.c);
+    text(this.comment, this.x, this.y);
     this.duration--;
   }
 }

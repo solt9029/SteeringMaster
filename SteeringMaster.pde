@@ -7,11 +7,17 @@ AudioSample audioSample;
 
 String stage; // 現在何をしているのか格納する
 
+ArrayList<Judge> judges = new ArrayList<Judge>();
+
 final float OFFSET = 3000; // 曲の本当の開始時間（ミリ秒）
 final int BPM = 230;
 final int NPM = BPM * 4; // 1分間に流れるノーツの数
 final float MPN = 60000.0 / (float)NPM; // ノート1個が流れるのに要する時間（ミリ秒）
 
+int steeringNoteIndex = -1; // ステアリング中のノートのインデックス
+int steeringPathIndex = -1;
+boolean steering = false;
+ArrayList<Position> steeringPositions = new ArrayList<Position>(); // ステアリング中のマウス座標を全部記録
 int noteIndex = 0;
 final int [] notes = {
   1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -30,27 +36,43 @@ final int [] notes = {
   1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
 int [] states;
+// 経路幅・経路長の順番で格納する
 final int [][] paths = {
-  {40, 1000},
+  {140, 1000},
   {200, 1500},
   {90, 1200},
-  {40, 1100},
-  {40, 700},
+  {60, 1100},
+  {100, 700},
   {140, 1000},
   {100, 1000},
-  {40, 1000},
-  {40, 1000},
-  {40, 1000},
-  {40, 1000},
-  {40, 1000},
-  {40, 1000},
-  {40, 1000},
-  {40, 1000},
-  {40, 1000}
+  {99, 1500},
+  {120, 1000},
+  {80, 1000},
+  {90, 1000},
+  {100, 1000},
+  {110, 1000},
+  {100, 1000},
+  {70, 1000},
+  {80, 1000}
 };
 
 int getNoteIndex() {
   return int((audioPlayer.position() - OFFSET) / MPN - 0.5);
+}
+
+int getPathIndex() {
+  int pathIndex = 0;
+  for (int i = 0; i < notes.length; i++) {
+    if (notes[i] == 0) {
+      continue;
+    }
+    if (states[i] == STATE_GREAT || states[i] == STATE_GOOD || states[i] == STATE_OKAY || states[i] == STATE_BAD) {
+      pathIndex++;
+      continue;
+    }
+    break;
+  }
+  return pathIndex;
 }
 
 void settings() {
@@ -59,6 +81,7 @@ void settings() {
 
 void setup() {
   noStroke();
+  textSize(UNIT * 2);
   
   minim = new Minim(this);
   audioPlayer = minim.loadFile("music.wav");
@@ -89,10 +112,48 @@ void draw() {
 }
 
 void keyPressed() {
+  if (!stage.equals(STAGE_TITLE)) {
+    return;
+  }
   // スペースキーが押されたらタイトル画面終了でゲームに移行する
-  if (stage.equals(STAGE_TITLE) && keyCode == SPACE_KEY_CODE) {
+  if (keyCode == SPACE_KEY_CODE) {
     stage = STAGE_GAME;
     audioPlayer.play();
+  }
+}
+
+void mousePressed() {
+  if (!stage.equals(STAGE_GAME)) {
+    return;
+  }
+  if (steering) {
+    return;
+  }
+  if (mouseX > START_X) {
+    return;
+  }
+  
+  audioSample.trigger();
+  
+  int noteIndex = getNoteIndex();
+  int pathIndex = getPathIndex();
+  for (int i = -OKAY_RANGE; i <= OKAY_RANGE; i++) {
+    if (noteIndex + i < 0 || noteIndex + i >= notes.length) {
+      continue;
+    }
+    if (notes[noteIndex + i] == 1 && states[noteIndex + i] == STATE_FRESH) {
+      steeringNoteIndex = noteIndex + i;
+      steeringPathIndex = pathIndex;
+      steering = true;
+      if (abs(i) <= GREAT_RANGE) {
+        states[noteIndex + i] = STATE_GREAT_STEERING;
+      } else if (abs(i) <= GOOD_RANGE) {
+        states[noteIndex + i] = STATE_GOOD_STEERING;
+      } else if (abs(i) <= OKAY_RANGE) {
+        states[noteIndex + i] = STATE_OKAY_STEERING;
+      }
+      break;
+    }
   }
 }
 
@@ -112,21 +173,11 @@ void drawGame() {
   rect(START_X, 0, UNIT * X_NUM - START_X, UNIT * Y_NUM);
   
   // 経路描画
-  int pathIndex = 0;
-  for (int i = 0; i < notes.length; i++) {
-    if (notes[i] == 0) {
-      continue;
-    }
-    if (states[i] == STATE_GREAT || states[i] == STATE_GOOD || states[i] == STATE_OKAY || states[i] == STATE_BAD) {
-      pathIndex++;
-      continue;
-    }
-    
-    fill(GLAY_COLOR);
-    rect(START_X, 0, paths[pathIndex][1], UNIT * Y_NUM);
-    fill(WHITE_COLOR);
-    rect(START_X, CENTER_Y - paths[pathIndex][0] / 2, paths[pathIndex][1], paths[pathIndex][0]);
-  }
+  int pathIndex = getPathIndex();
+  fill(GLAY_COLOR);
+  rect(START_X, 0, paths[pathIndex][1], UNIT * Y_NUM);
+  fill(WHITE_COLOR);
+  rect(START_X, CENTER_Y - paths[pathIndex][0] / 2, paths[pathIndex][1], paths[pathIndex][0]);
   
   // ノーツ描画
   int noteIndex = getNoteIndex();
@@ -142,24 +193,70 @@ void drawGame() {
   }
   
   // 4個前でまだヒットされていなかったらBadとする
-  if (noteIndex - 4 >= 0) {
-    if (notes[noteIndex - 4] == 1 && states[noteIndex - 4] == STATE_FRESH) {
-      states[noteIndex - 4] = STATE_BAD;
+  if (noteIndex - (OKAY_RANGE + 1) >= 0) {
+    if (notes[noteIndex - (OKAY_RANGE + 1)] == 1 && states[noteIndex - (OKAY_RANGE + 1)] == STATE_FRESH) {
+      states[noteIndex - (OKAY_RANGE + 1)] = STATE_BAD;
+      judges.add(new Judge(BAD_COMMENT, START_X, CENTER_Y, RED_COLOR));
     }
+  }
+  
+  // 判定描画
+  for (int i = 0; i < judges.size(); i++) {
+    fill(0);
+    judges.get(i).display();
+    if (judges.get(i).duration < 0) {
+      judges.remove(i);
+    }
+  }
+  
+  if (steering) {
+    steeringPositions.add(new Position(mouseX, mouseY)); // マウス座標を記録
+    
+    // ステアリング経路中
+    if (mouseX >= START_X && mouseX <= START_X + paths[pathIndex][1]) {
+      // 幅からはみ出ている場合
+      if (mouseY < CENTER_Y - paths[pathIndex][0] / 2 || mouseY > CENTER_Y + paths[pathIndex][0] / 2) {
+        states[steeringNoteIndex] = STATE_BAD;
+        judges.add(new Judge(BAD_COMMENT, mouseX, mouseY, RED_COLOR));
+        steering = false;
+        steeringPositions = new ArrayList<Position>();
+      }
+    }
+    
+    // ステアリング終了していた場合
+    if (mouseX > START_X + paths[pathIndex][1]) {
+      switch (states[steeringNoteIndex]) {
+        case STATE_GREAT_STEERING:
+          states[steeringNoteIndex] = STATE_GREAT;
+          judges.add(new Judge(GREAT_COMMENT, mouseX, mouseY, RED_COLOR));
+          break;
+        case STATE_GOOD_STEERING:
+          states[steeringNoteIndex] = STATE_GOOD;
+          judges.add(new Judge(GOOD_COMMENT, mouseX, mouseY, RED_COLOR));
+          break;
+        case STATE_OKAY_STEERING:
+          states[steeringNoteIndex] = STATE_OKAY;
+          judges.add(new Judge(OKAY_COMMENT, mouseX, mouseY, RED_COLOR));
+          break;
+        default:
+          break;
+      }
+      steering = false;
+      steeringPositions = new ArrayList<Position>();
+    }
+    
+    // ステアリングの軌跡を描画
+    stroke(RED_COLOR);
+    for (int i = 0; i < steeringPositions.size() - 1; i++) {
+      line(steeringPositions.get(i).x, steeringPositions.get(i).y, steeringPositions.get(i + 1).x, steeringPositions.get(i + 1).y);
+    }
+    noStroke();
   }
   
   if (ENVIRONMENT.equals(DEVELOPMENT)) {
     // 判定部分描画
     fill(0, 0, 0);
     rect(0, CENTER_Y - 1, UNIT * X_NUM, 2);
-    
-    // オート再生
-    //if (notePosition >= 0) {
-    //  if (states[notePosition] == 0 && notes[notePosition] > 0) {
-    //    states[notePosition] = 4;
-    //    audioSample.trigger();
-    //  }
-    //}
   }
 }
 
