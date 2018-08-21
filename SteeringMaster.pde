@@ -1,6 +1,8 @@
 import ddf.minim.*;
 import ddf.minim.effects.*;
 
+PImage titleImg;
+
 Minim minim;
 AudioPlayer audioPlayer;
 AudioSample audioSample;
@@ -9,52 +11,13 @@ String stage; // 現在何をしているのか格納する
 
 ArrayList<Judge> judges = new ArrayList<Judge>();
 
-final float OFFSET = 3000; // 曲の本当の開始時間（ミリ秒）
-final int BPM = 230;
-final int NPM = BPM * 4; // 1分間に流れるノーツの数
-final float MPN = 60000.0 / (float)NPM; // ノート1個が流れるのに要する時間（ミリ秒）
-
+int [] states;
+int noteIndex = 0;
+int pathIndex = 0;
+boolean steering = false;
 int steeringNoteIndex = -1; // ステアリング中のノートのインデックス
 int steeringPathIndex = -1;
-boolean steering = false;
 ArrayList<Position> steeringPositions = new ArrayList<Position>(); // ステアリング中のマウス座標を全部記録
-int noteIndex = 0;
-final int [] notes = {
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-};
-int [] states;
-// 経路幅・経路長の順番で格納する
-final int [][] paths = {
-  {140, 1000},
-  {200, 1500},
-  {90, 1200},
-  {60, 1100},
-  {100, 700},
-  {140, 1000},
-  {100, 1000},
-  {99, 1500},
-  {120, 1000},
-  {80, 1000},
-  {90, 1000},
-  {100, 1000},
-  {110, 1000},
-  {100, 1000},
-  {70, 1000},
-  {80, 1000}
-};
 
 int getNoteIndex() {
   return int((audioPlayer.position() - OFFSET) / MPN - 0.5);
@@ -81,14 +44,16 @@ void settings() {
 
 void setup() {
   noStroke();
-  textSize(UNIT * 2);
+  textSize(TEXT_SIZE);
   
+  titleImg = loadImage("title.png");
+
   minim = new Minim(this);
   audioPlayer = minim.loadFile("music.wav");
   audioSample = minim.loadSample("ka.wav");
-  
+
   stage = STAGE_TITLE;
-  
+
   states = new int [notes.length];
 }
 
@@ -97,15 +62,15 @@ void draw() {
     case STAGE_TITLE:
       drawTitle();
       break;
-      
+  
     case STAGE_GAME:
       drawGame();
       break;
-      
+  
     case STAGE_RESULT:
       drawResult();
       break;
-      
+  
     default:
       break;
   }
@@ -132,11 +97,11 @@ void mousePressed() {
   if (mouseX > START_X) {
     return;
   }
-  
+
   audioSample.trigger();
-  
-  int noteIndex = getNoteIndex();
-  int pathIndex = getPathIndex();
+
+  noteIndex = getNoteIndex();
+  pathIndex = getPathIndex();
   for (int i = -OKAY_RANGE; i <= OKAY_RANGE; i++) {
     if (noteIndex + i < 0 || noteIndex + i >= notes.length) {
       continue;
@@ -158,29 +123,32 @@ void mousePressed() {
 }
 
 void drawTitle() {
-  
+  background(WHITE_COLOR);
+  image(titleImg, 0, 0, UNIT * X_NUM, UNIT * Y_NUM);
 }
 
 void drawGame() {
   background(WHITE_COLOR);
-    
+
   // 左側水色部分描画
   fill(WATER_COLOR);
   rect(0, 0, START_X, UNIT * Y_NUM);
-  
-  // 右側緑色部分描画
+
+  // 右側黄緑色部分描画
   fill(YELLOW_GREEN_COLOR);
   rect(START_X, 0, UNIT * X_NUM - START_X, UNIT * Y_NUM);
-  
+
   // 経路描画
-  int pathIndex = getPathIndex();
-  fill(GLAY_COLOR);
-  rect(START_X, 0, paths[pathIndex][1], UNIT * Y_NUM);
-  fill(WHITE_COLOR);
-  rect(START_X, CENTER_Y - paths[pathIndex][0] / 2, paths[pathIndex][1], paths[pathIndex][0]);
-  
+  pathIndex = getPathIndex();
+  if (pathIndex >= 0 && pathIndex < paths.length) {
+    fill(GLAY_COLOR);
+    rect(START_X, 0, paths[pathIndex][1], UNIT * Y_NUM);
+    fill(WHITE_COLOR);
+    rect(START_X, CENTER_Y - paths[pathIndex][0] / 2, paths[pathIndex][1], paths[pathIndex][0]);
+  }
+
   // ノーツ描画
-  int noteIndex = getNoteIndex();
+  noteIndex = getNoteIndex();
   // int((UNIT * Y_NUM - CENTER_Y) / NOTE_SPACE)はCENTER_Yを過ぎた後でもノーツが表示されうる範囲
   for (int i = noteIndex - int((UNIT * Y_NUM - CENTER_Y) / NOTE_SPACE); i < notes.length; i++) {
     if (i < 0) {
@@ -191,15 +159,15 @@ void drawGame() {
       ellipse(START_X, CENTER_Y - (i - noteIndex) * NOTE_SPACE, NOTE_RADIUS * 2, NOTE_RADIUS * 2);
     }
   }
-  
+
   // 4個前でまだヒットされていなかったらBadとする
-  if (noteIndex - (OKAY_RANGE + 1) >= 0) {
+  if (noteIndex - (OKAY_RANGE + 1) >= 0 && noteIndex - (OKAY_RANGE + 1) < notes.length) {
     if (notes[noteIndex - (OKAY_RANGE + 1)] == 1 && states[noteIndex - (OKAY_RANGE + 1)] == STATE_FRESH) {
       states[noteIndex - (OKAY_RANGE + 1)] = STATE_BAD;
       judges.add(new Judge(BAD_COMMENT, START_X, CENTER_Y, RED_COLOR));
     }
   }
-  
+
   // 判定描画
   for (int i = 0; i < judges.size(); i++) {
     fill(0);
@@ -208,10 +176,10 @@ void drawGame() {
       judges.remove(i);
     }
   }
-  
+
   if (steering) {
     steeringPositions.add(new Position(mouseX, mouseY)); // マウス座標を記録
-    
+
     // ステアリング経路中
     if (mouseX >= START_X && mouseX <= START_X + paths[pathIndex][1]) {
       // 幅からはみ出ている場合
@@ -222,7 +190,7 @@ void drawGame() {
         steeringPositions = new ArrayList<Position>();
       }
     }
-    
+
     // ステアリング終了していた場合
     if (mouseX > START_X + paths[pathIndex][1]) {
       switch (states[steeringNoteIndex]) {
@@ -244,7 +212,7 @@ void drawGame() {
       steering = false;
       steeringPositions = new ArrayList<Position>();
     }
-    
+
     // ステアリングの軌跡を描画
     stroke(RED_COLOR);
     for (int i = 0; i < steeringPositions.size() - 1; i++) {
@@ -252,16 +220,30 @@ void drawGame() {
     }
     noStroke();
   }
-  
+
+  if (noteIndex >= notes.length) {
+    stage = STAGE_RESULT;
+    audioPlayer.pause();
+  }
+
   if (ENVIRONMENT.equals(DEVELOPMENT)) {
     // 判定部分描画
     fill(0, 0, 0);
     rect(0, CENTER_Y - 1, UNIT * X_NUM, 2);
+
+    // 変数プリント
+    println("====================");
+    println("noteIndex:" + noteIndex);
+    println("pathIndex:" + pathIndex);
+    println("steering:" + steering);
+    println("steeringNoteIndex:" + steeringNoteIndex);
+    println("steeringPathIndex:" + steeringPathIndex);
+    println("====================");
   }
 }
 
 void drawResult() {
-  
+  background(WHITE_COLOR);
 }
 
 void stop() {
