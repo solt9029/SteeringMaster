@@ -12,6 +12,9 @@ AudioSample startAudioSample;
 
 String stage; // 現在何をしているのか格納する
 
+int [] notes;
+int [][] paths;
+
 int score = 0;
 int combo = 0;
 
@@ -66,8 +69,6 @@ void setup() {
   startAudioSample = minim.loadSample("start.mp3");
 
   stage = STAGE_TITLE;
-
-  states = new int [notes.length];
 }
 
 void draw() {
@@ -106,6 +107,19 @@ void keyPressed() {
   // スペースキーが押されたらタイトル画面終了でゲームに移行する
   if (keyCode == SPACE_KEY_CODE) {
     startAudioSample.trigger();
+    switch (selectedMode) {
+      case EASY_MODE:
+        notes = EASY_NOTES;
+        paths = EASY_PATHS;
+        break;
+      case HARD_MODE:
+        notes = HARD_NOTES;
+        paths = HARD_PATHS;
+        break;
+      default:
+        break;
+    }
+    states = new int [notes.length];
     stage = STAGE_GAME;
     audioPlayer.play();
   }
