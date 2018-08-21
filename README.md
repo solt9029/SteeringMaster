@@ -19,3 +19,5 @@
 ## 設定
 
 - config.pde.exampleをコピーして、config.pdeとします。必要に応じて設定した値を変更してください。
+
+- score.pde.exampleをコピーして、score.pdeとします。必要に応じて譜面情報を変更してください。

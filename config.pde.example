@@ -4,7 +4,7 @@ final int Y_NUM = 40; // 画面縦に並べられる単位正方形の数
 
 final String DEVELOPMENT = "development"; // development:デバッグ用
 final String PRODUCTION = "production"; // production:本番用
-final String ENVIRONMENT = PRODUCTION;
+final String ENVIRONMENT = DEVELOPMENT;
 
 final String STAGE_TITLE = "title"; // タイトル画面
 final String STAGE_LOADING = "loading"; // ロード中（ゲーム画面）
@@ -16,29 +16,50 @@ final int SPACE_KEY_CODE = 32;
 final color WATER_COLOR = color(157, 204, 224);
 final color YELLOW_GREEN_COLOR = color(152, 251, 152);
 final color WHITE_COLOR = color(255, 255, 255);
-final color RED_COLOR = color(255, 0, 0);
+final color RED_COLOR = color(230, 0, 0);
 final color PINK_COLOR = color(234, 145, 152);
 final color GLAY_COLOR = color (200, 200, 200);
+final color BLACK_COLOR = color(20, 20, 20);
+final color BLUE_COLOR = color(0, 0, 230);
+final color ORANGE_COLOR = color(255, 165, 0);
+final color PURPLE_COLOR = color(100, 71, 148);
+final color YELLOW_COLOR = color(238, 191, 0);
 
+final int MODE_RADIUS = UNIT * 9;
+final int MODE_SELECTED_RADIUS = UNIT * 11;
+final int MODE_X = UNIT * 13;
+final int MODE_Y = UNIT * Y_NUM * 2 / 5;
 final float NOTE_RADIUS = UNIT * 2.5 / 3.0; // ノーツの半径
 final int START_X = UNIT * 20; // ステアリングをスタートするX座標
 final int CENTER_Y = UNIT * 34; // ステアリングする場所のY座標中心
 final float NOTE_SPACE = UNIT / 3.0; // ノート1個が占める範囲
+final int NORMAL_TEXT_SIZE = UNIT * 4;
+final int BIG_TEXT_SIZE = UNIT * 8;
+final int STEERING_STROKE_WEIGHT = UNIT / 3;
+final int MODE_STROKE_WEIGHT = UNIT / 2;
+final int RESULT_X = UNIT * 14;
 
 final int GREAT_RANGE = 1; // Great判定の範囲（現在のnoteIndexからプラスマイナス1）
-final int GOOD_RANGE = 2; // Good判定の範囲
 final int OKAY_RANGE = 3; // Okay判定の範囲
 
-final String GREAT_COMMENT = "Great!";
-final String GOOD_COMMENT = "Good!";
-final String OKAY_COMMENT = "Okay!";
-final String BAD_COMMENT = "Bad";
+final String GREAT_COMMENT = "GREAT";
+final String OKAY_COMMENT = "OKAY";
+final String BAD_COMMENT = "BAD";
 
 final int STATE_FRESH = 0; // まだ使われていない状態
 final int STATE_GREAT_STEERING = 1; // 最初がGreat判定でステアリング中
-final int STATE_GOOD_STEERING = 2; // 最初がGood判定でステアリング中
-final int STATE_OKAY_STEERING = 3; // 最初がOkay判定でステアリング中
-final int STATE_GREAT = 4; // Great判定
-final int STATE_GOOD = 5; // Good判定
-final int STATE_OKAY = 6; // Okay判定
-final int STATE_BAD = 7; // Bad判定（最初がBad判定またはステアリングで失敗した状態）
+final int STATE_OKAY_STEERING = 2; // 最初がOkay判定でステアリング中
+final int STATE_GREAT = 3; // Great判定
+final int STATE_OKAY = 4; // Okay判定
+final int STATE_BAD = 5; // Bad判定（最初がBad判定またはステアリングで失敗した状態）
+
+final int SCORE_BASIC_OKAY_INCREMENT = 10000;
+final int SCORE_COMBO_INCREMENT = 1000;
+final int SCORE_OKAY_GREAT_RATIO = 2; // Greatの時の得点 = (SCORE_BASIC_OKAY_INCREMENT + SCORE_COMBO_INCREMENT * combo) * SCORE_OKAY_GREAT_RATIO
+
+final String EASY_MODE = "EASY";
+final String HARD_MODE = "HARD";
+
+final String RESULT_SCORE = "SCORE: ";
+final String RESULT_COMBO = "COMBO: ";
+
