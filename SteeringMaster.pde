@@ -12,8 +12,9 @@ final int BPM = 230;
 final int NPM = BPM * 4; // 1分間に流れるノーツの数
 final float MPN = 60000.0 / (float)NPM; // ノート1個が流れるのに要する時間（ミリ秒）
 
+int noteIndex = 0;
 final int [] notes = {
-  1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -28,12 +29,28 @@ final int [] notes = {
   1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
+int [] states;
+final int [][] paths = {
+  {40, 1000},
+  {200, 1500},
+  {90, 1200},
+  {40, 1100},
+  {40, 700},
+  {140, 1000},
+  {100, 1000},
+  {40, 1000},
+  {40, 1000},
+  {40, 1000},
+  {40, 1000},
+  {40, 1000},
+  {40, 1000},
+  {40, 1000},
+  {40, 1000},
+  {40, 1000}
+};
 
-int [] hits;
-
-int getNotePosition() {
-  int notePosition = int((audioPlayer.position() - OFFSET) / MPN - 0.5);
-  return notePosition;
+int getNoteIndex() {
+  return int((audioPlayer.position() - OFFSET) / MPN - 0.5);
 }
 
 void settings() {
@@ -49,7 +66,7 @@ void setup() {
   
   stage = STAGE_TITLE;
   
-  hits = new int [notes.length];
+  states = new int [notes.length];
 }
 
 void draw() {
@@ -94,16 +111,40 @@ void drawGame() {
   fill(YELLOW_GREEN_COLOR);
   rect(START_X, 0, UNIT * X_NUM - START_X, UNIT * Y_NUM);
   
+  // 経路描画
+  int pathIndex = 0;
+  for (int i = 0; i < notes.length; i++) {
+    if (notes[i] == 0) {
+      continue;
+    }
+    if (states[i] == STATE_GREAT || states[i] == STATE_GOOD || states[i] == STATE_OKAY || states[i] == STATE_BAD) {
+      pathIndex++;
+      continue;
+    }
+    
+    fill(GLAY_COLOR);
+    rect(START_X, 0, paths[pathIndex][1], UNIT * Y_NUM);
+    fill(WHITE_COLOR);
+    rect(START_X, CENTER_Y - paths[pathIndex][0] / 2, paths[pathIndex][1], paths[pathIndex][0]);
+  }
+  
   // ノーツ描画
-  int notePosition = getNotePosition();
+  int noteIndex = getNoteIndex();
   // int((UNIT * Y_NUM - CENTER_Y) / NOTE_SPACE)はCENTER_Yを過ぎた後でもノーツが表示されうる範囲
-  for (int i = notePosition - int((UNIT * Y_NUM - CENTER_Y) / NOTE_SPACE); i < notes.length; i++) {
+  for (int i = noteIndex - int((UNIT * Y_NUM - CENTER_Y) / NOTE_SPACE); i < notes.length; i++) {
     if (i < 0) {
       continue;
     }
-    if (notes[i] > 0 && hits[i] == 0) {
+    if (notes[i] > 0 && states[i] == 0) {
       fill(PINK_COLOR);
-      ellipse(START_X, CENTER_Y - (i - notePosition) * NOTE_SPACE, NOTE_RADIUS * 2, NOTE_RADIUS * 2);
+      ellipse(START_X, CENTER_Y - (i - noteIndex) * NOTE_SPACE, NOTE_RADIUS * 2, NOTE_RADIUS * 2);
+    }
+  }
+  
+  // 4個前でまだヒットされていなかったらBadとする
+  if (noteIndex - 4 >= 0) {
+    if (notes[noteIndex - 4] == 1 && states[noteIndex - 4] == STATE_FRESH) {
+      states[noteIndex - 4] = STATE_BAD;
     }
   }
   
@@ -114,8 +155,8 @@ void drawGame() {
     
     // オート再生
     //if (notePosition >= 0) {
-    //  if (hits[notePosition] == 0 && notes[notePosition] > 0) {
-    //    hits[notePosition] = 1;
+    //  if (states[notePosition] == 0 && notes[notePosition] > 0) {
+    //    states[notePosition] = 4;
     //    audioSample.trigger();
     //  }
     //}
