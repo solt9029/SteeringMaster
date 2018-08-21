@@ -8,7 +8,7 @@ AudioSample audioSample;
 String stage; // 現在何をしているのか格納する
 
 final float OFFSET = 3000; // 曲の本当の開始時間（ミリ秒）
-final int BPM = 100;
+final int BPM = 115;
 final int NPM = BPM * 4; // 1分間に流れるノーツの数
 final float MPN = 60000.0 / (float)NPM; // ノート1個が流れるのに要する時間（ミリ秒）
 
@@ -99,9 +99,19 @@ void drawGame() {
     
     int notePosition = getNotePosition();
     println(notePosition);
+    if (notePosition % 16 == 0) {
+      audioSample.trigger();
+    }
   }
 }
 
 void drawResult() {
   
+}
+
+void stop() {
+  audioPlayer.close();
+  audioSample.stop();
+  minim.stop();
+  super.stop();
 }
