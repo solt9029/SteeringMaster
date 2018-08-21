@@ -1,0 +1,4 @@
+final int UNIT = 60; // 単位正方形
+final int X_NUM = 40; // 画面横に並べられる単位正方形の数
+final int Y_NUM = 20; // 画面縦に並べられる単位正方形の数
+final String ENV = "development"; // development:デバッグ用・production:本番用
