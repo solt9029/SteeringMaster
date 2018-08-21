@@ -2,10 +2,13 @@ import ddf.minim.*;
 import ddf.minim.effects.*;
 
 PImage titleImg;
+String selectedMode;
 
 Minim minim;
 AudioPlayer audioPlayer;
-AudioSample audioSample;
+AudioSample clickAudioSample;
+AudioSample selectAudioSample;
+AudioSample startAudioSample;
 
 String stage; // 現在何をしているのか格納する
 
@@ -53,11 +56,14 @@ void setup() {
   normalFont = loadFont("RictyDiminished-Bold-120.vlw");
   bigFont = loadFont("RictyDiminished-Bold-240.vlw");
 
+  selectedMode = EASY_MODE;
   titleImg = loadImage("title.png");
 
   minim = new Minim(this);
   audioPlayer = minim.loadFile("music.wav");
-  audioSample = minim.loadSample("ka.wav");
+  clickAudioSample = minim.loadSample("ka.wav");
+  selectAudioSample = minim.loadSample("select.mp3");
+  startAudioSample = minim.loadSample("start.mp3");
 
   stage = STAGE_TITLE;
 
@@ -87,8 +93,19 @@ void keyPressed() {
   if (!stage.equals(STAGE_TITLE)) {
     return;
   }
+  // 矢印
+  if (keyCode == LEFT || keyCode == RIGHT) {
+    selectAudioSample.trigger();
+    if (selectedMode.equals(EASY_MODE)) {
+      selectedMode = HARD_MODE;
+    } else {
+      selectedMode = EASY_MODE;
+    }
+  }
+  
   // スペースキーが押されたらタイトル画面終了でゲームに移行する
   if (keyCode == SPACE_KEY_CODE) {
+    startAudioSample.trigger();
     stage = STAGE_GAME;
     audioPlayer.play();
   }
@@ -105,7 +122,7 @@ void mousePressed() {
     return;
   }
 
-  audioSample.trigger();
+  clickAudioSample.trigger();
 
   noteIndex = getNoteIndex();
   pathIndex = getPathIndex();
@@ -130,6 +147,39 @@ void mousePressed() {
 void drawTitle() {
   background(WHITE_COLOR);
   image(titleImg, 0, 0, UNIT * X_NUM, UNIT * Y_NUM);
+  
+  textAlign(CENTER, CENTER);
+  
+  // easyモードを描画
+  fill(ORANGE_COLOR);
+  if (selectedMode.equals(EASY_MODE)) {
+    textFont(bigFont);
+    stroke(YELLOW_COLOR);
+    strokeWeight(MODE_STROKE_WEIGHT);
+    ellipse(MODE_X, MODE_Y, MODE_SELECTED_RADIUS * 2, MODE_SELECTED_RADIUS * 2);
+    noStroke();
+  } else {
+    textFont(normalFont);
+    ellipse(MODE_X, MODE_Y, MODE_RADIUS * 2, MODE_RADIUS * 2);
+  }
+  fill(WHITE_COLOR);
+  text(EASY_MODE, MODE_X, MODE_Y);
+  
+  // hardモードを描画
+  fill(PURPLE_COLOR);
+  if (selectedMode.equals(HARD_MODE)) {
+    textFont(bigFont);
+    stroke(YELLOW_COLOR);
+    strokeWeight(MODE_STROKE_WEIGHT);
+    ellipse(UNIT * X_NUM - MODE_X, MODE_Y, MODE_SELECTED_RADIUS * 2, MODE_SELECTED_RADIUS * 2);
+    noStroke();
+  } else {
+    textFont(normalFont);
+    ellipse(UNIT * X_NUM - MODE_X, MODE_Y, MODE_RADIUS * 2, MODE_RADIUS * 2);
+  }
+  fill(BLACK_COLOR);
+  text(HARD_MODE, UNIT * X_NUM - MODE_X, MODE_Y);
+  
 }
 
 void drawGame() {
@@ -221,7 +271,7 @@ void drawGame() {
 
     // ステアリングの軌跡を描画
     stroke(RED_COLOR);
-    strokeWeight(10);
+    strokeWeight(STEERING_STROKE_WEIGHT);
     for (int i = 0; i < steeringPositions.size() - 1; i++) {
       line(steeringPositions.get(i).x, steeringPositions.get(i).y, steeringPositions.get(i + 1).x, steeringPositions.get(i + 1).y);
     }
@@ -271,7 +321,9 @@ void drawResult() {
 
 void stop() {
   audioPlayer.close();
-  audioSample.stop();
+  clickAudioSample.stop();
+  selectAudioSample.stop();
+  startAudioSample.stop();
   minim.stop();
   super.stop();
 }
