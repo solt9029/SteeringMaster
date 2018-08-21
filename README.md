@@ -6,6 +6,12 @@
 
 - https://www.youtube.com/audiolibrary/music
 
+## 効果音について
+
+- 効果音は以下からダウンロードしています。
+
+- https://soundeffect-lab.info/sound/button/
+
 ## 開発環境
 
 - Processing: 3
