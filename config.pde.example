@@ -63,3 +63,4 @@ final String HARD_MODE = "HARD";
 
 final String RESULT_SCORE = "SCORE: ";
 final String RESULT_COMBO = "COMBO: ";
+final String RESULT_R2 = "R2: ";

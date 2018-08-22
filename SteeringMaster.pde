@@ -417,7 +417,8 @@ void drawResult() {
   double R2 = linearRegression.R2();
   double slope = linearRegression.slope();
   double intercept = linearRegression.intercept();
-  text("R2: " + R2, RESULT_X, BIG_TEXT_SIZE * 2 + NORMAL_TEXT_SIZE + UNIT * 2);
+  text(RESULT_R2 + R2, RESULT_X, BIG_TEXT_SIZE * 2 + NORMAL_TEXT_SIZE + UNIT * 2);
+  // TODO: MTの式を関数などで書けるようにする
   text("MT = " + float(round((float)intercept * pow(10, 2))) / pow(10, 2) + " + " + float(round((float)slope * pow(10, 2))) / pow(10, 2) + " ID", RESULT_X, BIG_TEXT_SIZE * 2 + NORMAL_TEXT_SIZE * 2 + UNIT * 2);
 }
 
