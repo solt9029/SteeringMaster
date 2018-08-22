@@ -4,7 +4,7 @@ final int Y_NUM = 40; // 画面縦に並べられる単位正方形の数
 
 final String DEVELOPMENT = "development"; // development:デバッグ用
 final String PRODUCTION = "production"; // production:本番用
-final String ENVIRONMENT = DEVELOPMENT;
+final String ENVIRONMENT = PRODUCTION;
 
 final String STAGE_TITLE = "title"; // タイトル画面
 final String STAGE_LOADING = "loading"; // ロード中（ゲーム画面）
@@ -38,6 +38,7 @@ final int BIG_TEXT_SIZE = UNIT * 8;
 final int STEERING_STROKE_WEIGHT = UNIT / 3;
 final int MODE_STROKE_WEIGHT = UNIT / 2;
 final int RESULT_X = UNIT * 14;
+final int NOTE_STROKE_WEIGHT = 1;
 
 final int GREAT_RANGE = 1; // Great判定の範囲（現在のnoteIndexからプラスマイナス1）
 final int OKAY_RANGE = 3; // Okay判定の範囲
@@ -62,4 +63,3 @@ final String HARD_MODE = "HARD";
 
 final String RESULT_SCORE = "SCORE: ";
 final String RESULT_COMBO = "COMBO: ";
-
