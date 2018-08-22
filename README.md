@@ -12,9 +12,15 @@
 
 - https://soundeffect-lab.info/sound/button/
 
+## LinearRegressionクラスについて
+
+- 以下を利用しています。
+
+- https://github.com/fracpete/princeton-java-algorithms/blob/master/src/main/java/edu/princeton/cs/algorithms/LinearRegression.java
+
 ## 開発環境
 
-- Processing: 3
+- Processing: 3.3
 
 ## 設定
 
