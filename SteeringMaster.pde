@@ -6,10 +6,13 @@ PImage resultImg;
 String selectedMode;
 
 Minim minim;
-AudioPlayer audioPlayer;
+AudioPlayer musicAudioPlayer;
+AudioPlayer titleAudioPlayer;
+AudioPlayer resultAudioPlayer;
 AudioSample clickAudioSample;
 AudioSample selectAudioSample;
 AudioSample startAudioSample;
+AudioSample clearAudioSample;
 
 String stage; // 現在何をしているのか格納する
 
@@ -37,7 +40,7 @@ ArrayList<Position> steeringPositions = new ArrayList<Position>(); // ステア�
 LinearRegression linearRegression; // ステアリングの法則の適合度を計算するために最後に使用
 
 int getNoteIndex() {
-  return int((audioPlayer.position() - OFFSET) / MPN - 0.5);
+  return int((musicAudioPlayer.position() - OFFSET) / MPN - 0.5);
 }
 
 int getPathIndex() {
@@ -69,12 +72,16 @@ void setup() {
   resultImg = loadImage("result.png");
 
   minim = new Minim(this);
-  audioPlayer = minim.loadFile("music.wav");
+  musicAudioPlayer = minim.loadFile("music.wav");
+  titleAudioPlayer = minim.loadFile("title.mp3");
+  resultAudioPlayer = minim.loadFile("result.mp3");
   clickAudioSample = minim.loadSample("ka.wav");
   selectAudioSample = minim.loadSample("select.mp3");
   startAudioSample = minim.loadSample("start.mp3");
+  clearAudioSample = minim.loadSample("clear.wav");
 
   stage = STAGE_TITLE;
+  titleAudioPlayer.play();
 }
 
 void draw() {
@@ -128,7 +135,8 @@ void keyPressed() {
     steeringTimestamps = new int [paths.length][paths[0].length];
     states = new int [notes.length];
     stage = STAGE_GAME;
-    audioPlayer.play();
+    titleAudioPlayer.pause();
+    musicAudioPlayer.play();
   }
 }
 
@@ -347,9 +355,11 @@ void drawGame() {
     println("====================");
   }
 
-  if (noteIndex >= notes.length || audioPlayer.position() >= audioPlayer.length()) {
+  if (noteIndex >= notes.length || musicAudioPlayer.position() >= musicAudioPlayer.length()) {
     stage = STAGE_RESULT;
-    audioPlayer.pause();
+    musicAudioPlayer.pause();
+    clearAudioSample.trigger();
+    resultAudioPlayer.play();
     
     // ステアリングの法則の適合度を計算する処理
     ArrayList <double[]> steeringList = new ArrayList<double[]>();
@@ -423,10 +433,13 @@ void drawResult() {
 }
 
 void stop() {
-  audioPlayer.close();
+  musicAudioPlayer.close();
+  titleAudioPlayer.close();
+  resultAudioPlayer.close();
   clickAudioSample.stop();
   selectAudioSample.stop();
   startAudioSample.stop();
+  clearAudioSample.stop();
   minim.stop();
   super.stop();
 }

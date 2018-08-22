@@ -17,6 +17,7 @@ class Judge {
     fill(this.c);
     textAlign(CENTER);
     text(this.comment, this.x, this.y);
+    this.y--;
     this.duration--;
   }
 }
