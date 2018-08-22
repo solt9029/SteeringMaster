@@ -15,6 +15,7 @@ String stage; // 現在何をしているのか格納する
 
 int [] notes;
 int [][] paths;
+int [][] steeringTimestamps;
 
 int score = 0;
 int combo = 0;
@@ -32,6 +33,8 @@ boolean steering = false;
 int steeringNoteIndex = -1; // ステアリング中のノートのインデックス
 int steeringPathIndex = -1;
 ArrayList<Position> steeringPositions = new ArrayList<Position>(); // ステアリング中のマウス座標を全部記録
+
+LinearRegression linearRegression; // ステアリングの法則の適合度を計算するために最後に使用
 
 int getNoteIndex() {
   return int((audioPlayer.position() - OFFSET) / MPN - 0.5);
@@ -122,6 +125,7 @@ void keyPressed() {
       default:
         break;
     }
+    steeringTimestamps = new int [paths.length][paths[0].length];
     states = new int [notes.length];
     stage = STAGE_GAME;
     audioPlayer.play();
@@ -151,6 +155,7 @@ void mousePressed() {
       steeringNoteIndex = noteIndex + i;
       steeringPathIndex = pathIndex;
       steering = true;
+      steeringTimestamps[pathIndex][0] = millis();
       if (abs(i) <= GREAT_RANGE) {
         states[noteIndex + i] = STATE_GREAT_STEERING;
       } else if (abs(i) <= OKAY_RANGE) {
@@ -222,6 +227,8 @@ void drawGame() {
   // ノーツ描画
   noteIndex = getNoteIndex();
   // int((UNIT * Y_NUM - CENTER_Y) / NOTE_SPACE)はCENTER_Yを過ぎた後でもノーツが表示されうる範囲
+  stroke(BLACK_COLOR);
+  strokeWeight(NOTE_STROKE_WEIGHT);
   for (int i = noteIndex - int((UNIT * Y_NUM - CENTER_Y) / NOTE_SPACE); i < notes.length; i++) {
     if (i < 0) {
       continue;
@@ -231,11 +238,14 @@ void drawGame() {
       ellipse(START_X, CENTER_Y - (i - noteIndex) * NOTE_SPACE, NOTE_RADIUS * 2, NOTE_RADIUS * 2);
     }
   }
+  noStroke();
 
   // 4個前でまだヒットされていなかったらBadとする
   if (noteIndex - (OKAY_RANGE + 1) >= 0 && noteIndex - (OKAY_RANGE + 1) < notes.length) {
     if (notes[noteIndex - (OKAY_RANGE + 1)] == 1 && states[noteIndex - (OKAY_RANGE + 1)] == STATE_FRESH) {
       states[noteIndex - (OKAY_RANGE + 1)] = STATE_BAD;
+      steeringTimestamps[pathIndex][0] = -1;
+      steeringTimestamps[pathIndex][1] = -1;
       judges.add(new Judge(BAD_COMMENT, START_X, CENTER_Y, BLUE_COLOR));
       combo = 0;
     }
@@ -258,6 +268,7 @@ void drawGame() {
       // 幅からはみ出ている場合
       if (mouseY < CENTER_Y - paths[pathIndex][0] / 2 || mouseY > CENTER_Y + paths[pathIndex][0] / 2) {
         states[steeringNoteIndex] = STATE_BAD;
+        steeringTimestamps[pathIndex][1] = -1;
         judges.add(new Judge(BAD_COMMENT, mouseX, mouseY, BLUE_COLOR));
         combo = 0;
         steering = false;
@@ -285,6 +296,7 @@ void drawGame() {
       default:
         break;
       }
+      steeringTimestamps[pathIndex][1] = millis();
       steering = false;
       steeringPositions = new ArrayList<Position>();
     }
@@ -311,12 +323,7 @@ void drawGame() {
   text(combo, UNIT * X_NUM / 2, BIG_TEXT_SIZE);
   textFont(normalFont);
   text("COMBO", UNIT * X_NUM / 2, BIG_TEXT_SIZE + NORMAL_TEXT_SIZE);
-
-  if (noteIndex >= notes.length) {
-    stage = STAGE_RESULT;
-    audioPlayer.pause();
-  }
-
+  
   if (ENVIRONMENT.equals(DEVELOPMENT)) {
     // 判定部分描画
     fill(0, 0, 0);
@@ -331,7 +338,68 @@ void drawGame() {
     println("steeringPathIndex:" + steeringPathIndex);
     println("combo:" + combo);
     println("score:" + score);
+    println("steeringTimestamps:");
+    for (int l = 0; l < steeringTimestamps.length; l++) {
+      for (int c = 0; c < steeringTimestamps[l].length; c++) {
+        println("[" + l + "]" + "[" + c + "]" + ":" + steeringTimestamps[l][c]);
+      }
+    }
     println("====================");
+  }
+
+  if (noteIndex >= notes.length || audioPlayer.position() >= audioPlayer.length()) {
+    stage = STAGE_RESULT;
+    audioPlayer.pause();
+    
+    // ステアリングの法則の適合度を計算する処理
+    ArrayList <double[]> steeringList = new ArrayList<double[]>();
+    for (int i = 0; i < paths.length; i++) {
+      if (steeringTimestamps[i][1] < 0) {
+        continue;
+      }
+      boolean added = false; // データが既にsteeringListに加えられたかどうか
+      double ID = (double)((double)paths[i][1] / (double)paths[i][0]);
+      double steeringTime = (double)(steeringTimestamps[i][1] - steeringTimestamps[i][0]);
+      for (int l = 0; l < steeringList.size(); l++) {
+        if (steeringList.get(l)[0] != ID) {
+          continue;
+        }
+        double steeringData[] = steeringList.get(l);
+        steeringData[1] += steeringTime;
+        steeringData[2]++;
+        steeringList.set(l, steeringData);
+        added = true;
+      }
+      if (!added) {
+        double steeringData[] = {ID, steeringTime, 1};
+        steeringList.add(steeringData);
+      }
+    }
+    
+    double [] IDs = new double [steeringList.size()];
+    double [] steeringTimes = new double[steeringList.size()];
+    for (int i = 0; i < steeringList.size(); i++) {
+      IDs[i] = steeringList.get(i)[0];
+      steeringTimes[i] = (double)((double)steeringList.get(i)[1] / (double)steeringList.get(i)[2]);
+    }
+    
+    linearRegression = new LinearRegression(IDs, steeringTimes);
+    
+    if (ENVIRONMENT.equals(DEVELOPMENT)) {
+      println("====================");
+      println("IDs:");
+      for (int i = 0; i < IDs.length; i++) {
+        println("[" + i + "]" + ":" + IDs[i]);
+      }
+      println("steeringTimes:");
+      for (int i = 0; i < steeringTimes.length; i++) {
+        println("[" + i + "]" + ":" + steeringTimes[i]);
+      }
+      println("R2:" + linearRegression.R2());
+      println("intercept:" + linearRegression.intercept());
+      println("slope:" + linearRegression.slope());
+      println("====================");
+    }
   }
 }
 
@@ -344,6 +412,13 @@ void drawResult() {
   fill(WHITE_COLOR);
   text(RESULT_SCORE + score, RESULT_X, BIG_TEXT_SIZE);
   text(RESULT_COMBO + maxCombo, RESULT_X, BIG_TEXT_SIZE * 2);
+  
+  textFont(normalFont);
+  double R2 = linearRegression.R2();
+  double slope = linearRegression.slope();
+  double intercept = linearRegression.intercept();
+  text("R2: " + R2, RESULT_X, BIG_TEXT_SIZE * 2 + NORMAL_TEXT_SIZE + UNIT * 2);
+  text("MT = " + float(round((float)intercept * pow(10, 2))) / pow(10, 2) + " + " + float(round((float)slope * pow(10, 2))) / pow(10, 2) + " ID", RESULT_X, BIG_TEXT_SIZE * 2 + NORMAL_TEXT_SIZE * 2 + UNIT * 2);
 }
 
 void stop() {
